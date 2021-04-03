@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <style>
+            * {
+                font: sans-serif;
+            }
+            body {
+                background: #EEE;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas id=output width=1024 height=1024></canvas>
+        <script>
+
+            function tohilbert(n, f) {
+                if (n<=1) {
+                    return [
+                        [0.25,0.25],
+                        [0.25,0.75],
+                        [0.75,0.75],
+                        [0.75,0.25],
+                    ][Math.floor(f*4)];
+                }
+                if (f < 0.25) {
+                    let result = tohilbert(n-1, (f-0.00)*4);
+                    return [
+                        result[1]/2 + 0.00,
+                        result[0]/2 + 0.00,
+                    ];
+                }
+                if (f < 0.50) {
+                    let result = tohilbert(n-1, (f-0.25)*4);
+                    return [
+                        result[0]/2 + 0.00,
+                        result[1]/2 + 0.50,
+                    ];
+                }
+                if (f < 0.75) {
+                    let result = tohilbert(n-1, (f-0.50)*4);
+                    return [
+                        result[0]/2 + 0.50,
+                        result[1]/2 + 0.50,
+                    ];
+                }
+                let result = tohilbert(n-1, (f-0.75)*4);
+                return [
+                    (1-result[1])/2 + 0.50,
+                    (1-result[0])/2 + 0.00,
+                ];
+            }
+
+            function rgbhex(c) {
+                let r = c[0].toString(16);
+                let g = c[1].toString(16);
+                let b = c[2].toString(16);
+                return '#' + [
+                    ('00'+r).substr(-2),
+                    ('00'+g).substr(-2),
+                    ('00'+b).substr(-2),
+                ].join('');
+            };
+
+            function toColor(f) {
+                if (f<0.3333) {
+                    return rgbhex([
+                        0,
+                        0,
+                        Math.round(f*3*255),
+                    ]);
+                }
+                if (f<0.6667) {
+                    return rgbhex([
+                        Math.round((f-0.3333)*3*255),
+                        0,
+                        255,
+                    ]);
+                }
+                return rgbhex([
+                    255,
+                    Math.round((f-0.6667)*3*255),
+                    255,
+                ]);
+            };
+
+            let n = 10;
+            (async () => {
+                let ctx = output.getContext('2d');
+                ctx.fillStyle = '#FFF';
+                ctx.fillRect(0,0,output.width,output.height);
+
+                let point = tohilbert(n, 0);
+                ctx.moveTo(point[0], point[1]);
+
+                let x = Date.now();;
+                for(i=0; i<1; i+=(1/(4**n))) {
+                    point = tohilbert(n, i);
+                    ctx.strokeStyle=toColor(i);
+                    ctx.lineTo(point[0]*output.width, point[1]*output.height);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(point[0]*output.width, point[1]*output.height);
+                    if (Date.now() >= x) {
+                        x += 1000 / 25;
+                        ctx.stroke();
+                        await new Promise((r)=>setTimeout(r,0));
+                    }
+                }
+                ctx.stroke();
+            })();
+
+
+
+        </script>
+    </body>
+</html>
